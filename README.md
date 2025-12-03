@@ -1,20 +1,29 @@
-<div align="center">
-<img width="1200" height="475" alt="GHBanner" src="https://github.com/user-attachments/assets/0aa67016-6eaf-458a-adb2-6e31a0763ed6" />
-</div>
+# The Phantom Crop - Chrome Extension
 
-# Run and deploy your AI Studio app
+A spooky, Victorian-themed Chrome extension for removing backgrounds from images.
 
-This contains everything you need to run your app locally.
+## Development
 
-View your app in AI Studio: https://ai.studio/apps/drive/1BtQN6RI_-rpx8VnQSdVohT2-bE8srZ3R
+```bash
+npm install
+npm run build
+```
 
-## Run Locally
+## Load Extension in Chrome
 
-**Prerequisites:**  Node.js
+1. Run `npm run build` to create the `dist` folder
+2. Open Chrome and go to `chrome://extensions/`
+3. Enable "Developer mode" (toggle in top right)
+4. Click "Load unpacked"
+5. Select the `dist` folder from this project
 
+## Usage
 
-1. Install dependencies:
-   `npm install`
-2. Set the `GEMINI_API_KEY` in [.env.local](.env.local) to your Gemini API key
-3. Run the app:
-   `npm run dev`
+1. Click the extension icon in Chrome toolbar
+2. Drop an image or click to select one
+3. The extension will process and remove the background
+4. Download the result
+
+## Backend
+
+For real background removal, run a Flask server at `http://localhost:5000/sever` that accepts POST requests with a `file` field and returns the processed image. Toggle between Mock/Live mode in the extension.

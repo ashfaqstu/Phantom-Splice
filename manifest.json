@@ -1,0 +1,13 @@
+{
+  "manifest_version": 3,
+  "name": "The Phantom Crop",
+  "version": "1.0.0",
+  "description": "Separate the Spirit from the Plane - A spooky background remover",
+  "action": {
+    "default_popup": "popup.html"
+  },
+  "permissions": [],
+  "host_permissions": [
+    "http://localhost:5000/*"
+  ]
+}
