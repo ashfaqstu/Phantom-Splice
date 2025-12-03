@@ -1,5 +1,6 @@
 import React, { useCallback, useState, useRef } from 'react';
 import { RitualState } from '../types';
+import { soundService } from '../services/soundService';
 
 interface ThePortalProps {
   onFileSelected: (file: File) => void;
@@ -14,9 +15,12 @@ const ThePortal: React.FC<ThePortalProps> = ({ onFileSelected, state }) => {
     e.preventDefault();
     e.stopPropagation();
     if (state === RitualState.IDLE || state === RitualState.FAILED) {
+      if (!isDragOver) {
+        soundService.playDragHover();
+      }
       setIsDragOver(true);
     }
-  }, [state]);
+  }, [state, isDragOver]);
 
   const handleDragLeave = useCallback((e: React.DragEvent) => {
     e.preventDefault();
@@ -39,9 +43,10 @@ const ThePortal: React.FC<ThePortalProps> = ({ onFileSelected, state }) => {
     if (e.dataTransfer.files && e.dataTransfer.files.length > 0) {
       const file = e.dataTransfer.files[0];
       if (file.type.startsWith('image/')) {
+        soundService.playDrop();
         onFileSelected(file);
       } else {
-        alert("Only images can be offered to the portal.");
+        soundService.playFailure();
       }
     }
   }, [onFileSelected, state]);
@@ -54,41 +59,26 @@ const ThePortal: React.FC<ThePortalProps> = ({ onFileSelected, state }) => {
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     if (e.target.files && e.target.files.length > 0) {
+      soundService.playDrop();
       onFileSelected(e.target.files[0]);
     }
   };
 
-  // Dynamic Styles based on state
   const isSummoning = isDragOver;
   const isProcessing = state === RitualState.SEVERING;
   
-  // Base Circle classes
-  const circleBase = "relative w-64 h-64 md:w-96 md:h-96 rounded-full flex items-center justify-center transition-all duration-700 ease-in-out cursor-pointer group";
+  // Dynamic Styles
+  const pulseSpeed = isSummoning || isProcessing ? 'duration-150' : 'duration-[2000ms]';
+  const scale = isSummoning ? 'scale-110' : 'scale-100';
   
-  let borderColor = "border-purple-800";
-  let glowEffect = "";
-  let iconColor = "text-purple-400";
-  let textColor = "text-purple-300";
-
-  if (isSummoning) {
-    borderColor = "border-green-400";
-    glowEffect = "animate-ectoplasm scale-105";
-    iconColor = "text-green-400";
-    textColor = "text-green-300";
-  } else if (isProcessing) {
-    borderColor = "border-red-900";
-    glowEffect = "animate-pulse shadow-[0_0_50px_rgba(153,27,27,0.5)]";
-    iconColor = "text-red-500";
-    textColor = "text-red-400";
-  } else {
-    // Idle
-    glowEffect = "hover:shadow-[0_0_30px_rgba(88,28,135,0.6)] hover:border-purple-500";
-  }
+  // Heartbeat animation via inline style for variability
+  const heartbeatStyle = (isSummoning || isProcessing) 
+    ? { animation: 'blob-pulse 0.4s ease-in-out infinite alternate' } 
+    : { animation: 'blob-pulse 3s ease-in-out infinite alternate' };
 
   return (
     <div className="w-full flex flex-col items-center justify-center min-h-[500px]">
       
-      {/* Hidden Input */}
       <input 
         type="file" 
         ref={fileInputRef} 
@@ -97,66 +87,77 @@ const ThePortal: React.FC<ThePortalProps> = ({ onFileSelected, state }) => {
         className="hidden"
       />
 
-      {/* The Portal Circle */}
+      {/* Main Wound/Portal Container */}
       <div 
         onDragEnter={handleDragEnter}
         onDragOver={handleDragOver}
         onDragLeave={handleDragLeave}
         onDrop={handleDrop}
         onClick={handleClick}
-        className={`${circleBase} border-4 border-dashed ${borderColor} ${glowEffect} bg-black/40 backdrop-blur-sm`}
+        className={`
+          relative w-[320px] h-[320px] md:w-[480px] md:h-[480px]
+          flex items-center justify-center cursor-pointer
+          transition-all ease-out
+          ${scale}
+        `}
       >
-        {/* Runes Ring (Decorative) */}
-        <div className={`absolute inset-0 rounded-full border border-white/5 opacity-20 ${isProcessing ? 'animate-portal-spin' : ''}`}></div>
-        
-        {/* Fog Particles (CSS Only) */}
-        {isSummoning && (
-           <>
-            <div className="absolute bottom-4 left-1/4 w-8 h-8 bg-green-500/20 rounded-full blur-xl animate-fog" style={{ animationDelay: '0s' }}></div>
-            <div className="absolute bottom-4 right-1/4 w-12 h-12 bg-green-500/20 rounded-full blur-xl animate-fog" style={{ animationDelay: '0.5s' }}></div>
-            <div className="absolute bottom-10 left-1/2 w-10 h-10 bg-green-500/10 rounded-full blur-xl animate-fog" style={{ animationDelay: '1.2s' }}></div>
-           </>
-        )}
+        {/* 1. The Outer Glow / Bruise */}
+        <div 
+           className="absolute inset-0 bg-red-900/20 blur-[60px] rounded-full transition-opacity duration-300"
+           style={{ opacity: isSummoning ? 0.8 : 0.3 }}
+        ></div>
 
-        <div className="z-10 flex flex-col items-center text-center p-6 space-y-4 pointer-events-none">
-           {isProcessing ? (
-             <>
-               <div className="mb-4">
-                 {/* Spooky Spinner */}
-                 <svg className="animate-spin h-16 w-16 text-purple-600" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-                   <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
-                   <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-                 </svg>
-               </div>
-               <h3 className="text-2xl font-cinzel text-purple-200 animate-pulse">Severing Spirit...</h3>
-               <p className="text-sm text-purple-400/70">Do not break the circle</p>
-             </>
-           ) : (
-             <>
-                <div className={`transition-transform duration-300 ${isSummoning ? 'scale-125 rotate-12' : ''}`}>
-                  {/* Scissors Icon */}
-                  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" className={`w-20 h-20 ${iconColor}`}>
-                    <path fillRule="evenodd" d="M2.614 4.54a1.5 1.5 0 0 1 2.053-.127l1.242 1.118 2.071-2.072a3.001 3.001 0 0 1 4.243 0L13.293 4.53l.93-.93a1.5 1.5 0 0 1 2.12 2.122l-.929.93 1.07 1.072a3.002 3.002 0 0 1 0 4.242l-2.07 2.072 1.117 1.242a1.5 1.5 0 1 1-2.222 1.998L12.19 16.16l-3.352 3.353a4.5 4.5 0 1 1-6.364-6.364l3.353-3.353L4.662 8.67a1.5 1.5 0 0 1-.122-2.053l-.004-.005 1.12-1.118-2.07-2.072a3.002 3.002 0 0 1 0-4.242l2.07-2.072L4.54 5.856a1.5 1.5 0 0 1-1.926-1.316ZM15.707 9.12l-1.414-1.414 1.414-1.415 1.414 1.415-1.414 1.414Zm-4.95-4.95 1.414 1.415-1.414 1.414-1.414-1.414 1.414-1.415ZM8.5 14.5a1.5 1.5 0 1 0 0 3 1.5 1.5 0 0 0 0-3Z" clipRule="evenodd" />
-                  </svg>
-                </div>
-                <h3 className={`text-2xl font-cinzel font-bold transition-colors ${textColor}`}>
-                  {isSummoning ? "Release the Spirit" : "Summon Image"}
-                </h3>
-                <p className="text-purple-400/60 max-w-xs">
-                  {isSummoning 
-                    ? "Drop to sever the background..." 
-                    : "Drag and drop your image here, or click to open the veil."}
-                </p>
-             </>
-           )}
+        {/* 2. The Writhing Wound (Organic Blob) */}
+        <div 
+          className={`
+            absolute inset-0 border-4 mix-blend-screen
+            transition-colors duration-300
+            ${isSummoning ? 'border-red-500 bg-red-900/20' : 'border-red-900/40 bg-black/40'}
+            ${isProcessing ? 'border-red-400 bg-red-950/80' : ''}
+          `}
+          style={{
+             boxShadow: isSummoning ? '0 0 50px rgba(255,0,0,0.5), inset 0 0 30px rgba(255,0,0,0.3)' : '0 0 20px rgba(50,0,0,0.5)',
+             ...heartbeatStyle
+          }}
+        ></div>
+
+        {/* 3. Inner Vortex Layers (Rotating) */}
+        <div className={`absolute inset-6 opacity-60 rounded-full border border-dashed border-red-800/50 animate-spin-slow duration-[10s]`}></div>
+        <div className={`absolute inset-12 opacity-40 rounded-full border-2 border-dotted border-red-700/50 animate-spin-reverse duration-[15s]`}></div>
+        
+        {/* 4. The Void Center */}
+        <div 
+           className={`
+             absolute w-40 h-40 rounded-full bg-black shadow-[inset_0_0_40px_rgba(0,0,0,1)]
+             flex items-center justify-center transition-all duration-300
+             ${isSummoning ? 'scale-125 shadow-[inset_0_0_20px_rgba(255,0,0,0.5)]' : 'scale-100'}
+           `}
+        >
+          {isProcessing ? (
+             <div className="relative w-full h-full flex items-center justify-center">
+                <div className="absolute inset-0 border-t-4 border-red-600 rounded-full animate-spin"></div>
+                <span className="font-mono-tech text-red-500 animate-pulse text-xs tracking-widest">SEVERING</span>
+             </div>
+          ) : (
+            <div className={`transition-all duration-300 ${isSummoning ? 'text-red-500 scale-110' : 'text-red-900'}`}>
+               <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" className="w-16 h-16">
+                 <path d="M11.645 20.91l-.007-.003-.022-.012a15.247 15.247 0 01-.383-.218 25.18 25.18 0 01-4.244-3.17C4.688 15.36 2.25 12.174 2.25 8.25 2.25 5.322 4.714 3 7.688 3A5.5 5.5 0 0112 5.052 5.5 5.5 0 0116.313 3c2.973 0 5.437 2.322 5.437 5.25 0 3.925-2.438 7.111-4.739 9.256a25.175 25.175 0 01-4.244 3.17 15.247 15.247 0 01-.383.219l-.022.012-.007.004-.003.001a.752.752 0 01-.704 0l-.003-.001z" />
+               </svg>
+            </div>
+          )}
         </div>
+
+        {/* 5. Text Overlay - Float underneath */}
+        <div className="absolute -bottom-24 text-center pointer-events-none">
+          <h2 className={`text-2xl font-cinzel font-bold tracking-[0.2em] transition-colors duration-300 ${isSummoning ? 'text-red-500' : 'text-red-900/70'}`}>
+            {isSummoning ? "INSERT FLESH" : "OPEN THE WOUND"}
+          </h2>
+          <p className="font-mono-tech text-[10px] text-red-900/50 mt-1 uppercase">
+            {isSummoning ? "RELEASE TO CONSUME" : "CLICK OR DRAG"}
+          </p>
+        </div>
+
       </div>
-      
-      {state === RitualState.FAILED && (
-        <div className="mt-8 text-red-400 font-cinzel text-lg animate-pulse">
-           The ritual failed. The spirits are restless.
-        </div>
-      )}
     </div>
   );
 };
